@@ -1,22 +1,47 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import styled from 'styled-components'
 import { useGlobalContext } from '../../context/globalContext';
 import History from '../../History/History';
 import { InnerLayout } from '../../styles/Layouts';
 import { dollar } from '../../utils/icons.js';
 import Chart from '../Chart/Chart';
+import html2Canvas from 'html2canvas';
+import jspdf from 'jspdf';
+
+import { plus } from '../../utils/icons.js';
+import Button from '../Button/Button';
 
 function Dashboard() {
-    const {totalExpenses,incomes, expenses, totalIncome, totalBalance, getIncomes, getExpenses } = useGlobalContext()
+    const { totalExpenses, incomes, expenses, totalIncome, totalBalance, getIncomes, getExpenses } = useGlobalContext()
+
+    const pdfRef = useRef();
 
     useEffect(() => {
         getIncomes()
         getExpenses()
     }, [])
 
+    const downloadPDF = () => {
+        const input = pdfRef.current;
+        html2Canvas(input).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jspdf('p', 'mm', 'a4', true);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+            const imgX = (pdfWidth - imgWidth * ratio) / 2;
+            const imgY = 30;
+            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+            pdf.save('expense.pdf');
+
+        })
+    }
+
     return (
         <DashboardStyled className='main' >
-            <InnerLayout>
+            <InnerLayout ref={pdfRef}>
                 <h2>All Transactions</h2>
                 <div className="stats-con">
                     <div className="chart-con">
@@ -62,9 +87,24 @@ function Dashboard() {
                                 ${Math.max(...expenses.map(item => item.amount))}
                             </p>
                         </div>
+                        
+
                     </div>
                 </div>
             </InnerLayout>
+
+            <br />
+                        <div style={{ marginLeft: "800px" }}>
+                            <Button
+                                name={'Download Sheet'}
+                                icon={plus}
+                                bPad={'.8rem 1.6rem'}
+                                bRad={'30px'}
+                                bg={'var(--color-accent'}
+                                color={'#fff'}
+                                onClick={downloadPDF}
+                            />
+                        </div>
         </DashboardStyled>
     )
 }
@@ -123,7 +163,7 @@ const DashboardStyled = styled.div`
                 justify-content: space-between;
             }
             .salary-title{
-                font-size: 1.2rem;
+                font-size: 01rem;
                 span{
                     font-size: 1.2rem;
                 }
@@ -139,7 +179,7 @@ const DashboardStyled = styled.div`
                 align-items: center;
                 p{
                     font-weight: 600;
-                    font-size: 1.6rem;
+                    font-size: 1rem;
                 }
             }
         }
